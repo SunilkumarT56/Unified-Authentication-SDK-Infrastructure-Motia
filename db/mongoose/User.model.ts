@@ -9,12 +9,6 @@ const userSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 50,
     },
-    userId: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-
     email: {
       type: String,
       required: true,

@@ -1,4 +1,3 @@
-// step1-signup.ts
 import { ApiRouteConfig, Handlers } from "motia";
 import { userSchema } from "../Zod/userSchema";
 import { z } from "zod";
@@ -6,6 +5,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import connectDB from "../db/db";
 import User from "../db/mongoose/User.model";
+import mongoose from "mongoose"; // Import mongoose
 
 export const config: ApiRouteConfig = {
   name: "signup",
@@ -24,18 +24,19 @@ export const handler: Handlers["signup"] = async (
 
     const input = req.body as z.infer<typeof userSchema>;
     const { email, password, name } = input;
-    const user = await User.findOne({ email });
-    if (user) {
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return {
         status: 400,
-        body: {
-          success: false,
-          message: "User already exists",
-        },
+        body: { success: false, message: "User already exists" },
       };
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+
+
+    const userId = new mongoose.Types.ObjectId();
 
     const rawToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto
@@ -43,13 +44,12 @@ export const handler: Handlers["signup"] = async (
       .update(rawToken)
       .digest("hex");
 
-    const userId = crypto.randomBytes(16).toString("hex");
-
     const userObj = {
-      userId,
+      _id: userId, // Store the ID in the object
       email,
       name,
       passwordHash,
+      emailVerified: false,
     };
 
     const emailTokenObj = {
@@ -59,10 +59,12 @@ export const handler: Handlers["signup"] = async (
       ipAddress: req.headers["x-forwarded-for"] || req.ip,
       userAgent: req.headers["user-agent"] || "unknown",
       email,
+      userId: userId,
     };
 
     await state.set(`user:${email}`, "signup", userObj);
     await state.set(`emailToken:${email}`, "signup", emailTokenObj);
+
     emit({
       topic: "store-user-db",
       data: { email },
@@ -84,7 +86,7 @@ export const handler: Handlers["signup"] = async (
     logger.error("Signup error", { error });
     return {
       status: 500,
-      body: { success: false, message: "Internallll error" },
+      body: { success: false, message: "Internal error" },
     };
   }
 };

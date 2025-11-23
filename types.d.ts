@@ -13,8 +13,9 @@ declare module 'motia' {
 
   interface Handlers {
     'send-verify-email': EventHandler<never, never>
-    'store-email-token': EventHandler<never, { topic: 'send-email'; data: never }>
-    'store-user-db': EventHandler<never, { topic: 'store-user-db'; data: never }>
+    'store-user-db': EventHandler<never, never>
     'signup': ApiRouteHandler<Record<string, unknown>, unknown, { topic: 'store-user-db'; data: never } | { topic: 'store-email-token'; data: never }>
+    'store-email-token': EventHandler<never, { topic: 'send-email'; data: never }>
+    'verify-the-user': ApiRouteHandler<Record<string, unknown>, unknown, never>
   }
 }
