@@ -1,87 +1,90 @@
+// step1-signup.ts
 import { ApiRouteConfig, Handlers } from "motia";
+import { userSchema } from "../Zod/userSchema";
 import { z } from "zod";
-import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import connectDB from "../db/db";
+import User from "../db/mongoose/User.model";
 
 export const config: ApiRouteConfig = {
-  name: "submit-credentials",
+  name: "signup",
   type: "api",
   path: "/signup",
   method: "POST",
-  emits: ["credentials-submitted-signup"],
+  emits: ["store-user-db", "store-email-token"],
 };
 
-export const userSchema = z.object({
-  name: z
-    .string()
-    .min(2, "Name must have at least 2 characters")
-    .max(50, "Name must not exceed 50 characters")
-    .regex(/^[A-Za-z\s]+$/, "Name can only contain letters and spaces"),
-  email: z.string().email("Invalid email format"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters long")
-    .max(100, "Password is too long"),
-});
-
-export const handler: Handlers["submit-credentials"] = async (
+export const handler: Handlers["signup"] = async (
   req: any,
-  { logger, emit, state }: any
+  { emit, logger, state }: any
 ) => {
   try {
+    await connectDB();
+
     const input = req.body as z.infer<typeof userSchema>;
     const { email, password, name } = input;
+    const user = await User.findOne({ email });
+    if (user) {
+      return {
+        status: 400,
+        body: {
+          success: false,
+          message: "User already exists",
+        },
+      };
+    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    const jobId = uuidv4();
-    const user = {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    const userId = crypto.randomBytes(16).toString("hex");
+
+    const userObj = {
+      userId,
       email,
       name,
-      hashedPassword,
-      createdAt: new Date().toISOString(),
-      jobId,
-      status: "Queued",
+      passwordHash,
     };
-    await state.set(jobId, "signup_jobs", user);
+
+    const emailTokenObj = {
+      tokenHash,
+      rawToken,
+      expiresAt: new Date(Date.now() + 3600 * 1000),
+      ipAddress: req.headers["x-forwarded-for"] || req.ip,
+      userAgent: req.headers["user-agent"] || "unknown",
+      email,
+    };
+
+    await state.set(`user:${email}`, "signup", userObj);
+    await state.set(`emailToken:${email}`, "signup", emailTokenObj);
+    emit({
+      topic: "store-user-db",
+      data: { email },
+    });
 
     emit({
-      topic: "credentials-submitted-signup",
-      data: {
-        jobId,
-        status: "Queued",
-      },
+      topic: "store-email-token",
+      data: { email },
     });
 
     return {
       status: 200,
       body: {
         success: true,
-        message: "Signup has been submitted successfully",
-        jobId,
+        message: "Signup successful. Verification email will be sent.",
       },
     };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      logger.error("Validation error", { errors: error.message });
-      return {
-        status: 400,
-        body: {
-          success: false,
-          message: "Validation failed",
-          errors: error.message,
-        },
-      };
-    }
-
-    logger.error("Internal server error", { error });
+    logger.error("Signup error", { error });
     return {
       status: 500,
-      body: {
-        success: false,
-        message: "Internal server error",
-      },
+      body: { success: false, message: "Internallll error" },
     };
   }
 };
