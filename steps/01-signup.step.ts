@@ -45,7 +45,7 @@ export const handler: Handlers["signup"] = async (
       .digest("hex");
 
     const userObj = {
-      _id: userId, // Store the ID in the object
+      _id: userId,
       email,
       name,
       passwordHash,
