@@ -18,7 +18,6 @@ export const handler: Handlers["store-email-token"] = async (
 
     const { email } = input;
 
-   
     const emailTokenObj = await state.get(`emailToken:${email}`, "signup");
 
     if (!emailTokenObj) {
