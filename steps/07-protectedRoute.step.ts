@@ -12,7 +12,7 @@ export const config: ApiRouteConfig = {
 
 export const handler: Handlers["protected-route"] = async (
   req: any,
-  { emit, logger }: any
+  { emit, logger, user }: any
 ) => {
   try {
     return {
@@ -20,6 +20,7 @@ export const handler: Handlers["protected-route"] = async (
       body: {
         success: true,
         message: "Protected route accessed successfully",
+        user: user.email,
       },
     };
   } catch (err) {

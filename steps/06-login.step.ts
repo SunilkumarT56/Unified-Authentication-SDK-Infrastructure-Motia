@@ -8,7 +8,7 @@ import connectDB from "../db/db";
 export const config: ApiRouteConfig = {
   name: "signin",
   type: "api",
-  path: "/signin",
+  path: "/login",
   method: "POST",
   emits: ["user-logged-in"],
 };
@@ -33,6 +33,15 @@ export const handler: Handlers["signin"] = async (
         body: { success: false, message: "User not found" },
       };
     }
+    if (!user.emailVerified) {
+      return {
+        status: 400,
+        body: {
+          success: false,
+          message: "email is not verified",
+        },
+      };
+    }
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return {
@@ -40,11 +49,10 @@ export const handler: Handlers["signin"] = async (
         body: { success: false, message: "Invalid password" },
       };
     }
-    //@ts-ignore
     const token: string = jwt.sign(
       { email, userId: user._id.toString() },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN! }
+      { expiresIn: process.env.JWT_EXPIRES_IN as any }
     );
     await state.set(`user:${email}`, "signin", { email, userId: user._id });
     emit({
