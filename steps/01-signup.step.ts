@@ -12,7 +12,7 @@ export const config: ApiRouteConfig = {
   type: "api",
   path: "/signup",
   method: "POST",
-  emits: ["store-user-db", "store-email-token"],
+  emits: ["store-user-db", "store-email-token" , "user-signed-up"],
 };
 
 export const handler: Handlers["signup"] = async (

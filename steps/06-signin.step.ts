@@ -1,6 +1,9 @@
 import { ApiRouteConfig, Handlers } from "motia";
 import User from "../db/mongoose/User.model";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
+import connectDB from "../db/db";
 
 export const config: ApiRouteConfig = {
   name: "signin",
@@ -15,6 +18,7 @@ export const handler: Handlers["signin"] = async (
   { emit, state }: any
 ) => {
   try {
+    await connectDB();
     const { email, password } = req.body;
     if (!email || !password) {
       return {
@@ -36,6 +40,12 @@ export const handler: Handlers["signin"] = async (
         body: { success: false, message: "Invalid password" },
       };
     }
+    //@ts-ignore
+    const token: string = jwt.sign(
+      { email, userId: user._id.toString() },
+      process.env.JWT_SECRET!,
+      { expiresIn: process.env.JWT_EXPIRES_IN! }
+    );
     await state.set(`user:${email}`, "signin", { email, userId: user._id });
     emit({
       topic: "user-logged-in",
@@ -46,6 +56,9 @@ export const handler: Handlers["signin"] = async (
     });
     return {
       status: 200,
+      headers: {
+        "Set-Cookie": `token=${token}; HttpOnly; Path=/; Max-Age=${process.env.JWT_EXPIRES_IN} ; SameSite=Lax; Secure;`,
+      },
       body: { success: true, message: "User logged in successfully" },
     };
   } catch (error) {

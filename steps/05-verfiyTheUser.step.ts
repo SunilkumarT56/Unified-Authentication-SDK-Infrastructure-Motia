@@ -3,6 +3,7 @@ import connectDB from "../db/db";
 import User from "../db/mongoose/User.model";
 import EmailVerification from "../db/mongoose/Email.model";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
 export const config: ApiRouteConfig = {
   name: "verify-the-user",
@@ -57,11 +58,20 @@ export const handler: Handlers["verify-the-user"] = async (
     record.usedAt = new Date();
     await record.save();
 
-    await User.findByIdAndUpdate(record.userId, {
+    const user = await User.findByIdAndUpdate(record.userId, {
       emailVerified: true,
     });
+    //@ts-ignore
+    const jwtToken: string = jwt.sign(
+      { email: user?.email, userId: user?._id.toString() },
+      process.env.JWT_SECRET!,
+      { expiresIn: process.env.JWT_EXPIRES_IN! }
+    );
     return {
       status: 200,
+      headers: {
+        "Set-Cookie": `jwt=${jwtToken}; HttpOnly; Path=/; Max-Age=${process.env.JWT_EXPIRES_IN} ; SameSite=Lax; Secure;`,
+      },
       body: {
         success: true,
         message: "Email verified successfully",
