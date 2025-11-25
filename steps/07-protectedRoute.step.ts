@@ -19,7 +19,7 @@ export const handler: Handlers["protected-route"] = async (
       status: 200,
       body: {
         success: true,
-        message: "Protected route accessed successfully",
+        message: "Protected route accessed successfullyyyy",
         user: user.email,
       },
     };
