@@ -23,7 +23,6 @@ export const handler: Handlers["store-user-db"] = async (
       logger.error("Store user: No signup data found");
       return;
     }
-
     const user = new User(userObj);
     await user.save();
 
