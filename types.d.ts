@@ -12,6 +12,8 @@ declare module 'motia' {
   }
 
   interface Handlers {
+    'forget-password': ApiRouteHandler<Record<string, unknown>, unknown, never>
+    'logout': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'protected-route': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'signin': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'verify-the-user': ApiRouteHandler<Record<string, unknown>, unknown, never>

@@ -70,7 +70,7 @@ export const handler: Handlers["verify-the-user"] = async (
     return {
       status: 200,
       headers: {
-        "Set-Cookie": `jwt=${jwtToken}; HttpOnly; Path=/; Max-Age=${process.env.JWT_EXPIRES_IN} ; SameSite=Lax; Secure;`,
+        "Set-Cookie": `token=${jwtToken}; HttpOnly; Path=/; Max-Age=${process.env.JWT_EXPIRES_IN} ; SameSite=Lax; Secure;`,
       },
       body: {
         success: true,
